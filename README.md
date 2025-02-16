@@ -1,5 +1,6 @@
 # Trend-Haven
 Full-fledged E-commerce website built using the MERN stack
+<br/>
 This project is a learning-focused e-commerce platform for clothes shopping, developed 
 within a 6-week timeline using the MERN stack (MongoDB, Express.js, React, Node.js). 
 The website features product browsing, user authentication, shopping cart management, 
