@@ -10,7 +10,6 @@ function ManageSubCategory() {
   const [subcatpic, setsubcatpic] = useState(null);
   const [subcatdata, setsubcatdata] = useState([]);
   const [catdata, setcatdata] = useState([]);
-  // const [selectedCategory, setselectedCategory] = useState('');
   const [picname, setpicname] = useState();
   const [editmode, seteditmode] = useState(false);
   const fileInputRef = useRef(null);
