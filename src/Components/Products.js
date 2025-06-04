@@ -42,31 +42,40 @@ function Products() {
       <div className="login">
         <div className="container">
           {prodsdata.length > 0 ? (
-            prodsdata.map((item, index) => (
-              <div className="col-md-4 top_brand_left" key={index}>
-                <div className="hover14 column">
-                  <div className="agile_top_brand_left_grid">
-                    <div className="agile_top_brand_left_grid1">
-                      <figure>
-                        <div className="snipcart-item block">
-                          <div className="snipcart-thumb">
-                            <Link to={`/details?pid=${item._id}`}>
-                              <img
-                                title=" "
-                                alt=" "
-                                src={`uploads/${item.picture}`}
-                                height="125"
-                              />
-                              <h3>{item.pname}</h3>
-                            </Link>
-                          </div>
-                        </div>
-                      </figure>
+            <div className="product-list">
+              {prodsdata.map((item, index) => (
+                <div className="product-list-item" key={index}>
+                  <div className="product-list-item-image">
+                    <Link to={`/details?pid=${item._id}`}>
+                      <img
+                        title={item.pname}
+                        alt={item.pname}
+                        src={`uploads/${item.picture}`}
+                      />
+                    </Link>
+                  </div>
+                  <div className="product-list-item-details">
+                    <Link to={`/details?pid=${item._id}`}>
+                      <h3>{item.pname}</h3>
+                    </Link>
+                    <div className="product-pricing">
+                      {item.Discount && item.Discount > 0 ? (
+                        <>
+                          <span className="discounted-price">
+                            ₹{Math.round(item.Rate - (item.Rate * item.Discount / 100))}
+                          </span>
+                          <span className="original-price">₹{item.Rate}</span>
+                        </>
+                      ) : (
+                        <span className="current-price">₹{item.Rate}</span>
+                      )}
                     </div>
+                    {/* You can add more details here like short description etc. */}
+                    <Link to={`/details?pid=${item._id}`} className="view-details-btn">View Details</Link>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <h2>No products found</h2>
           )}

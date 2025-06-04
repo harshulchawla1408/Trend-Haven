@@ -95,7 +95,7 @@ function Footer() {
         <div class="container">
           <div class="copy-left">
             <p>
-              &copy; 2024 TREND HAVEN . All rights reserved |
+              &copy; 2025 TREND HAVEN . All rights reserved |
             </p>
           </div>
           <div class="copy-right">
@@ -103,7 +103,7 @@ function Footer() {
           </div>
           <div class="clearfix"></div>
         </div>
-      </div>
+      </div> 
     </>
   );
 }

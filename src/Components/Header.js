@@ -100,17 +100,17 @@ function Header() {
                         <Link to="/homepage">Home</Link>
                       </li>
                       <li>
-                        <Link to="/subcategories?cid=66a5285b4c83d8cef0f24351">
+                        <Link to="/subcategories?cid=67a35f90545c8023f6b49087">
                           Men
                         </Link>
                       </li>
                       <li>
-                        <Link to="/subcategories?cid=66a528684c83d8cef0f24354">
+                        <Link to="/subcategories?cid=67a35fa6545c8023f6b4908b">
                           Women
                         </Link>
                       </li>
                       <li>
-                        <Link to="/subcategories?cid=66a528974c83d8cef0f24357">
+                        <Link to="/subcategories?cid=67a35fba545c8023f6b4908e">
                           Kids
                         </Link>
                       </li>

@@ -284,5 +284,128 @@
     font-weight: bold;
     color: #333;
   }
-  
-  
+
+/* Product List Styles */
+.product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between items */
+  padding: 20px 0;
+}
+
+.product-list-item {
+  display: flex;
+  flex-direction: row; /* Align image and details side-by-side */
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  overflow: hidden; /* To contain floated elements or for border-radius on children */
+}
+
+.product-list-item-image {
+  flex: 0 0 200px; /* Increased width for the image container */
+  margin-right: 20px;
+}
+
+.product-list-item-image img {
+  width: 100%;
+  height: auto; /* Let height adjust to maintain aspect ratio */
+  object-fit: cover; /* Scale image nicely, crops if aspect ratio differs */
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+.product-list-item-details {
+  flex: 1; /* Takes remaining space */
+  display: flex;
+  flex-direction: column;
+}
+
+.product-list-item-details h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.4em;
+  color: #333;
+}
+
+.product-list-item-details h3 a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.product-list-item-details h3 a:hover {
+  color: #007bff;
+}
+
+.product-list-item-details p {
+  margin-bottom: 15px;
+  font-size: 1em;
+  color: #555;
+}
+
+.view-details-btn {
+  display: inline-block;
+  padding: 8px 15px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  text-align: center;
+  margin-top: auto; /* Pushes button to the bottom if details container is flex column */
+  align-self: flex-start; /* Aligns button to the left */
+  transition: background-color 0.3s ease;
+}
+
+.view-details-btn:hover {
+  background-color: #0056b3;
+  color: white;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .product-list-item {
+    flex-direction: column; /* Stack image and details vertically */
+    align-items: center; /* Center items when stacked */
+    text-align: center;
+  }
+
+  .product-list-item-image {
+    margin-right: 0;
+    margin-bottom: 15px; /* Space between image and details when stacked */
+    width: 90%; /* Adjust image width for stacked view */
+    max-width: 250px; /* Max width for image on smaller screens */
+  }
+
+  .product-list-item-details {
+    align-items: center; /* Center details text */
+  }
+
+  .view-details-btn {
+    align-self: center; /* Center button in stacked view */
+  }
+}
+
+/* Pricing Styles */
+.product-pricing {
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
+
+.discounted-price {
+  color: #e91e63; /* A prominent color for the sale price */
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.original-price {
+  text-decoration: line-through;
+  color: #777; /* Lighter color for the old price */
+  font-size: 0.9em;
+}
+
+.current-price {
+  color: #333; /* Standard price color */
+  font-weight: bold;
+}

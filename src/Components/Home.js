@@ -26,32 +26,48 @@ const slideImages = [
     caption: "Slide 2",
   },
   {
-    url: "images/b4.jpg",
+    url: "images/b2.jpg",
     caption: "Slide 3",
+  },
+  {
+    url: "images/b4.jpg",
+    caption: "Slide 4",
   },
 ];
 function Home() {
-  const [prodsdata, setprodsdata] = useState([]);
-  const navigate = useNavigate();
-  async function fetchlatestprods() {
-    try {
-      const resp = await axios.get(`http://localhost:9000/api/fetchnewprods`);
-      if (resp.status === 200) {
-        if (resp.data.statuscode === 1) {
-          setprodsdata(resp.data.proddata);
-        } else {
-          setprodsdata([]);
-        }
-      } else {
-        alert("Some error occured");
-      }
-    } catch (err) {
-      alert(err.message);
+  const [prodsdata, setProdsdata] = useState([]);
+const [isLoading, setIsLoading] = useState(true);
+const [error, setError] = useState(null);
+const navigate = useNavigate();
+
+async function fetchlatestprods() {
+  setIsLoading(true);
+  setError(null);
+  
+  try {
+    const resp = await axios.get(`http://localhost:9000/api/fetchnewprods`, {
+      timeout: 10000
+    });
+    
+    if (resp.data.statuscode === 1) {
+      setProdsdata(resp.data.proddata || []);
+    } else {
+      setProdsdata([]);
+      console.log('No products found or empty response');
     }
+  } catch (err) {
+    console.error('Error fetching products:', err);
+    setError('Failed to load products. Please try again later.');
+    setProdsdata([]);
+  } finally {
+    setIsLoading(false);
   }
-  useEffect(() => {
-    fetchlatestprods();
-  }, []);
+}
+
+// Call this in useEffect
+useEffect(() => {
+  fetchlatestprods();
+}, []);
   return (
     <>
       <div className="login">

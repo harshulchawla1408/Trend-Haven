@@ -1,30 +1,64 @@
-const express = require('express')
-const app = express()
-const port = 9000
-app.use(express.json());
-
-var cors = require('cors')
-app.use(cors())
-
+const express = require('express');
+const app = express();
+const port = 9000;
 const fs = require('fs');
-
-const multer  = require('multer')
-
-let mystorage = multer.diskStorage({ 
-    destination: (req, file, cb) => 
-    {
-      cb(null, "public/uploads");
-    },
-    filename: (req, file, cb) => 
-    {
-        var picname = Date.now() + file.originalname;
-        cb(null, picname);
-    }
-  });
-  let upload = multer({ storage: mystorage });
-
+const path = require('path');
+const cors = require('cors');
+const multer = require('multer');
 const mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1:27017/projectdb').then(() => console.log('Connected to MongoDB!'));
+
+// Middleware
+app.use(express.json());
+app.use(cors());
+
+// MongoDB Connection
+mongoose.connect('mongodb://127.0.0.1:27017/projectdb')
+  .then(() => console.log('Connected to MongoDB!'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Multer Configuration
+const mystorage = multer.diskStorage({ 
+  destination: (req, file, cb) => {
+    // Create uploads directory if it doesn't exist
+    const uploadDir = 'public/uploads';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const picname = Date.now() + '-' + file.originalname;
+    cb(null, picname);
+  }
+});
+
+const upload = multer({ 
+  storage: mystorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
+
+// Product Schema and Model
+const productSchema = new mongoose.Schema({
+    catid: String,
+    subcatid: String,
+    pname: String,
+    rate: Number,
+    dis: Number,
+    stock: Number,
+    descp: String,
+    picture: String,
+    status: { type: String, default: 'active' },
+    created_at: { type: Date, default: Date.now }
+}, { versionKey: false });
+
+const ProductModel = mongoose.model("products", productSchema, "products");
 
 //Signup page
 var signupSchema = mongoose.Schema({pname:String,phone:String,username:{type:String,unique:true},password:String,usertype:String},{versionKey:false})
@@ -342,48 +376,20 @@ app.get("/api/fetchprodsbysubcatid",async(req,res)=>
 })
 
 
-app.get("/api/getproddetails",async(req,res)=>
-    {
-        var result = await ProdModel.find({_id:req.query.pid})
-        if(result.length===0)
-        {
-            res.status(200).send({statuscode:0})
-        }
-        else
-        {
-            res.status(200).send({statuscode:1,proddata:result[0]})
-        }    
-    })
+app.get("/api/getproddetails", async (req, res) => {
+  try {
+    const result = await ProdModel.find({ _id: req.query.pid });
 
-app.put("/api/updateproduct", upload.single('picture'), async (req, res) => {
-    try{
-        var picturename;
-        if (!req.file) 
-        {
-        picturename = req.body.oldpicname;
-       } 
-       else
-      {
-        picturename = req.file.filename;
-
-        if (req.body.oldpicname !== "noimage.jpg") 
-            {
-            fs.unlinkSync(`uploads/${req.body.oldpicname}`);
-    }
-    }
-    
-    var updateresult = await ProdModel.updateOne({_id: req.body.pid}, {$set: {pname:req.body.pname,Rate: req.body.rate, Discount: req.body.dis, Stock: req.body.stock, Description: req.body.descp,picture: picturename}});
-    if (updateresult.modifiedCount===1) {
-        res.status(200).send({ statuscode: 1 });
+    if (result.length === 0) {
+      res.status(200).send({ statuscode: 0 });
     } else {
-        res.status(200).send({ statuscode: 0 });
+      res.status(200).send({ statuscode: 1, product: result[0] });
     }
-    } catch (e) {
-        console.log(e.message);
-            res.status(500).send({ statuscode: -1, msg: "Some error occurred" });
-    }
+  } catch (error) {
+    console.error("Error fetching product details:", error);
+    res.status(500).send({ statuscode: -1, message: "Internal server error" });
+  }
 });
-
 
 app.delete("/api/delproduct/:id", async (req, res) => {
     var result = await ProdModel.deleteOne({_id: req.params.id});
@@ -391,6 +397,49 @@ app.delete("/api/delproduct/:id", async (req, res) => {
         res.status(200).send({ statuscode: 1 });
     } else {
         res.status(200).send({ statuscode: 0 });
+    }
+});
+
+// Update product
+app.put("/api/updateproduct", upload.single('picture'), async (req, res) => {
+    try {
+        const { catid, subcatid, pname, rate, dis, stock, descp, oldpicname, pid } = req.body;
+        let updateData = {
+            catid,
+            subcatid,
+            pname,
+            Rate: rate,
+            Discount: dis,
+            Stock: stock,
+            Description: descp
+        };
+
+        // If new picture is uploaded
+        if (req.file) {
+            updateData.picture = req.file.filename;
+            
+            // Delete old picture if it exists
+            if (oldpicname) {
+                const oldPicPath = path.join(__dirname, 'public', 'uploads', oldpicname);
+                if (fs.existsSync(oldPicPath)) {
+                    fs.unlinkSync(oldPicPath);
+                }
+            }
+        }
+
+        const result = await ProdModel.updateOne(
+            { _id: pid },
+            { $set: updateData }
+        );
+
+        if (result.modifiedCount > 0) {
+            res.status(200).send({ statuscode: 1, message: "Product updated successfully" });
+        } else {
+            res.status(200).send({ statuscode: 0, message: "No changes made to the product" });
+        }
+    } catch (error) {
+        console.error("Error updating product:", error);
+        res.status(500).send({ statuscode: -1, message: "Error updating product", error: error.message });
     }
 });
 
@@ -553,71 +602,59 @@ app.get("/api/getuserorders",async(req,res)=>
     }    
 })
 
-app.get("/api/getorderproducts",async(req,res)=>
-{
-    var result = await OrderModel.findOne({_id:req.query.orderno});
-    if(result.length===0)
-    {
-        res.status(200).send({statuscode:0})
+app.get("/api/getorderproducts", async (req, res) => {
+  try {
+    const result = await OrderModel.findOne({ _id: req.query.orderno });
+
+    if (!result) {
+      res.status(200).send({ statuscode: 0 });
+    } else {
+      res.status(200).send({ statuscode: 1, items: result.OrderProducts });
     }
-    else
-    {
-        res.status(200).send({statuscode:1,items:result.OrderProducts})
-    }    
-})
+  } catch (error) {
+    console.error("Error getting order products:", error);
+    res.status(500).send({ statuscode: -1, message: "Error getting order products" });
+  }
+});
 
 
-app.put("/api/updatestatus",async(req,res)=>
-{ 
-    try
-    {
-        var updateresult = await OrderModel.updateOne({_id: req.body.orderid}, { $set: {status:req.body.newst}});
-       
+app.put("/api/updatestatus", async (req, res) => {
+    try {
+        const updateresult = await OrderModel.updateOne(
+            { _id: req.body.orderid },
+            { $set: { status: req.body.newst } }
+        );
 
-        if(updateresult.modifiedCount===1)
-        {
-            res.status(200).send({statuscode:1})
+        if (updateresult.modifiedCount === 1) {
+            res.status(200).send({ statuscode: 1 });
+        } else {
+            res.status(200).send({ statuscode: 0 });
         }
-        else
-        {
-            res.status(200).send({statuscode:0})
-        }
+    } catch (error) {
+        console.error("Error updating status:", error);
+        res.status(500).send({ statuscode: -1, message: "Error updating status" });
     }
-    catch(e)
-    {
-        console.log(e);
-        res.status(500).send({statuscode:-1,msg:"Some error occured"})
-    }
-})
-app.get("/api/fetchnewprods",async(req,res)=>
-    {
-        var result = await ProdModel.find().sort({"addedon":-1}).limit(6)
-        if(result.length===0)
-        {
-            res.status(200).send({statuscode:0})
-        }
-        else
-        {
-            res.status(200).send({statuscode:1,proddata:result})
-        }    
-    })
-    
-    app.get("/api/searchproducts",async(req,res)=>
-    {
-        var searchtext = req.query.q;
-        var result = await ProdModel.find({pname: { $regex: '.*' + searchtext ,$options:'i' }})
-        if(result.length===0)
-        {
-            res.status(200).send({statuscode:0})
-        }
-        else
-        {
-            res.status(200).send({statuscode:1,proddata:result})
-        }    
-    })
-    
+});
 
-app.listen(port,()=>
-{
-    console.log("Server is running on " + port);
-})
+// Get latest products
+app.get("/api/fetchnewprods", async (req, res) => {
+    try {
+        // Fetch the 8 most recent products, sorted by addedon date (newest first)
+        const products = await ProdModel.find({})
+            .sort({ addedon: -1 })
+            .limit(9);
+            
+        if (products.length > 0) {
+            res.status(200).send({ statuscode: 1, proddata: products });
+        } else {
+            res.status(200).send({ statuscode: 0, msg: "No products found" });
+        }
+    } catch (error) {
+        console.error("Error fetching latest products:", error);
+        res.status(500).send({ statuscode: 0, msg: "Error fetching products" });
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
