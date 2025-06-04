@@ -1,70 +1,103 @@
-# Getting Started with Create React App
+# 🛍️ Trend-Haven — Full Stack E-Commerce Website
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Welcome to **Trend-Haven**, a full-featured e-commerce platform where users can browse products, manage carts, and place orders — while admins control the entire catalog and order system.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🧩 Features
 
-### `npm start`
+### 👤 User Side
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- ✅ **User Registration & Login**
+- 🔐 **Change Password Feature**
+- 🔎 **Search Products by Keyword**
+- 🛒 **Add to Cart & Place Order**
+- 🧾 **View Past Orders with Order History**
+- 🧱 **Client-side Route Protection for Authenticated Users**
+- 🚫 **Cannot place orders or access cart without logging in**
+- 📱 **Mobile-friendly layout for smooth browsing on all devices**
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+### 🛠️ Admin Panel
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- 🧑‍💻 **Admin Login with Role-Based Access**
+- 📦 **Manage Categories & Subcategories**
+- ➕ **Add, Edit, or Delete Products**
+- 🧑 **Search & Manage Users**
+- 📊 **View All Orders with Filtering**
+- 🔄 **Update Order Status** (Pending → Shipped → Delivered)
+- 🛡️ **Admin Routes Fully Protected**
+- 📥 **View Order Details with Product Breakdown**
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 🧠 Additional Features
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- 💬 **Frontend and Backend Connected via REST APIs**
+- 🔁 **Persistent Cart Data via React State**
+- 🕵️ **404 Pages for Invalid Routes**
+- 🌐 **Clean UI/UX with basic animations and hover effects**
+- 🧩 **Modular code structure for easy future scaling**
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 🧑‍💻 Tech Stack
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+| Layer       | Technology               |
+|-------------|--------------------------|
+| Frontend    | HTML, CSS, React.js      |
+| Backend     | Node.js, Express.js      |
+| Database    | MongoDB                  |
+| Auth        | Basic Auth (No JWT)      |
+| State Mgmt  | React State (No Redux)   |
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🚀 Installation & Setup
+1️⃣ Clone the Repository
+git clone https://github.com/harshulchawla1408/Trend-Haven.git
+cd Trend_Haven
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+2️⃣ Install Dependencies
+npm install
 
-## Learn More
+3️⃣ Run the Application
+- 🔧 Start Backend Server: **npm run server**
+- 💻 Start Frontend Server (in a separate terminal): **npm start**
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Now, it will open http://localhost:3000 in your browser.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## 🌱 Future Improvements
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- ✅ **Add JWT-based secure authentication**
+- 💳 **Integrate payment gateways (Razorpay/Stripe)**
+- 🧠 **Add product reviews and ratings**
+- 📊 **Build admin dashboard with order/product analytics**
+- 📦 **Add inventory management with stock tracking**
 
-### Analyzing the Bundle Size
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## 📸 UI Highlights
 
-### Making a Progressive Web App
+Basic but attractive UI with clean and intuitive design for both **User** and **Admin** dashboards.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## 🤝 Contributing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Pull requests are welcome!  
+For major changes, please open an issue first to discuss what you would like to change.
 
-### Deployment
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 📃 License
 
-### `npm run build` fails to minify
+This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+Made with ❤️ by [Harshul Chawla](https://github.com/harshulchawla1408)
+
