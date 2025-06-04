@@ -1,16 +1,58 @@
 import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { userContext } from "../App";
+import { FaShoppingCart } from "react-icons/fa";
+import { useCart } from "./CartContext";
+
+// Add CSS for cart icon and counter
+const cartIconStyle = {
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#fff',
+  fontSize: '20px',
+  textDecoration: 'none',
+  marginLeft: '15px',
+  padding: '8px',
+  borderRadius: '50%',
+  transition: 'all 0.3s ease',
+  width: '40px',
+  height: '40px',
+};
+
+const cartCountStyle = {
+  position: 'absolute',
+  top: '0',
+  right: '0',
+  backgroundColor: '#ff4444',
+  color: 'white',
+  borderRadius: '50%',
+  minWidth: '20px',
+  height: '20px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '12px',
+  fontWeight: 'bold',
+  padding: '0 4px',
+  boxSizing: 'border-box',
+};
 
 function Header() {
   const { udata, setudata } = useContext(userContext);
   const navigate = useNavigate();
   const [sterm, setsterm] = useState();
+  const { clearCart } = useCart();
+  
   function onlogout() {
+    clearCart();
     setudata(null);
     sessionStorage.clear();
     navigate("/homepage");
   }
+  const { itemCount } = useCart();
+  
   function gotocart() {
     navigate("/showcart");
   }
@@ -140,12 +182,22 @@ function Header() {
                 </button>
                 <div className="clearfix"></div>
               </div>
-              <div class="header-right2">
-                <div class="cart box_1">
-                  <Link to="/showcart">
-                    <img src="images/bag1.png" alt="" height="30" />
+              <div className="header-right2" style={{ marginLeft: '10px' }}>
+                <div className="cart" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+                  <Link 
+                    to="/showcart" 
+                    style={cartIconStyle}
+                    className="cart-icon"
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <FaShoppingCart />
+                    {itemCount > 0 && (
+                      <span style={cartCountStyle}>
+                        {itemCount > 9 ? '9+' : itemCount}
+                      </span>
+                    )}
                   </Link>
-                  <div class="clearfix"> </div>
                 </div>
               </div>
               <div class="clearfix"> </div>

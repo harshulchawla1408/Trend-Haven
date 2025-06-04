@@ -1,11 +1,37 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { userContext } from "../App";
+import { useCart } from "./CartContext";
 
 function Products() {
   const [params] = useSearchParams();
   const subcatid = params.get("sid");
   const [prodsdata, setprodsdata] = useState([]);
+  const navigate = useNavigate();
+  const { udata } = useContext(userContext);
+  const { addToCart } = useCart();
+  
+  const handleAddToCart = (product) => {
+    if (!udata) {
+      toast.info("Please login to add to cart");
+      navigate("/login");
+      return;
+    }
+    
+    const productToAdd = {
+      _id: product._id,
+      picture: product.picture || '',
+      pname: product.pname || 'Product',
+      Rate: product.Rate - (product.Rate * (product.Discount || 0) / 100),
+      quantity: 1,
+      Stock: product.Stock || 0
+    };
+    
+    addToCart(productToAdd);
+    toast.success("Product added to cart!");
+  };
   useEffect(() => {
     if (subcatid !== "") {
       fetchprodsbysubcat();
@@ -71,7 +97,21 @@ function Products() {
                       )}
                     </div>
                     {/* You can add more details here like short description etc. */}
-                    <Link to={`/details?pid=${item._id}`} className="view-details-btn">View Details</Link>
+                    <div className="product-actions">
+                      <div className="button-group">
+                        <Link to={`/details?pid=${item._id}`} className="view-details-btn">
+                          <i className="fa fa-eye"></i> View Details
+                        </Link>
+                        <button 
+                          onClick={() => handleAddToCart(item)}
+                          className={`add-to-cart-btn ${item.Stock <= 0 ? 'out-of-stock' : ''}`}
+                          disabled={item.Stock <= 0}
+                        >
+                          <i className="fa fa-shopping-cart"></i>
+                          {item.Stock > 0 ? ' Add to Cart' : ' Out of Stock'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

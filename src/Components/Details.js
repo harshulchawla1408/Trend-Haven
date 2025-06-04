@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { userContext } from "../App";
+import { useCart } from "./CartContext";
 import "./style.css";
 
 function Details() {
@@ -14,10 +15,12 @@ function Details() {
   const [remcost, setremcost] = useState(0);
   const [qty, setqty] = useState(1);
   const [tc, settc] = useState(0);
+  const [discountedPrice, setDiscountedPrice] = useState(0);
   const [stock, setstock] = useState([]);
   const navigate = useNavigate();
 
   const { udata } = useContext(userContext);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchproddetails();
@@ -29,7 +32,9 @@ function Details() {
     if (proddata.Rate !== undefined && proddata.Discount !== undefined) {
       const discountedPrice =
         proddata.Rate - (proddata.Discount * proddata.Rate) / 100;
-      setremcost(discountedPrice);
+      const roundedPrice = parseFloat(discountedPrice.toFixed(2));
+      setremcost(roundedPrice);
+      setDiscountedPrice(roundedPrice);
     } else {
       setremcost(proddata.Rate || 0);
     }
@@ -43,7 +48,8 @@ function Details() {
   }, [proddata]);
 
   useEffect(() => {
-    settc(remcost * qty);
+    const total = parseFloat((remcost * qty).toFixed(2));
+    settc(total);
   }, [qty, remcost]);
 
   async function fetchproddetails() {
@@ -121,37 +127,29 @@ function Details() {
     }
   }
 
-  async function addtocart() {
+  function addtocart() {
     if (!proddata) return;
     
     if (udata === null) {
       toast.info("Please login to add to cart");
       navigate("/login");
-    } else {
-      const cartdata = {
-        pid: prodid,
-        picture: proddata.picture || '',
-        pname: proddata.pname || 'Product',
-        rate: remcost,
-        qty: qty,
-        tc: tc,
-        username: udata.username,
-      };
-
-      try {
-        const resp = await axios.post(
-          "http://localhost:9000/api/savetocart",
-          cartdata
-        );
-        if (resp.status === 200 && resp.data.statuscode === 1) {
-          navigate("/showcart");
-        } else {
-          toast.warning("Problem while adding to cart, try again");
-        }
-      } catch (err) {
-        toast.warning("Error: " + err.message);
-      }
+      return;
     }
+    
+    const productToAdd = {
+      _id: prodid,
+      picture: proddata.picture || '',
+      pname: proddata.pname || 'Product',
+      Rate: remcost,
+      quantity: parseInt(qty) || 1,
+      Stock: proddata.Stock || 0
+    };
+    
+    addToCart(productToAdd);
+    toast.success("Product added to cart!");
+    
+    // Optional: Navigate to cart after adding
+    // navigate("/showcart");
   }
 
   if (isLoading) {
@@ -192,9 +190,16 @@ function Details() {
               <br />
               <div className="product-pricing">
                 <h4>
-                  Price: ₹{remcost}{" "}
-                  <span className="original-price">₹{proddata.Rate}</span>
+                  Price: ₹{remcost.toFixed(2)}{" "}
+                  {proddata.Discount > 0 && (
+                    <span className="original-price">₹{parseFloat(proddata.Rate).toFixed(2)}</span>
+                  )}
                 </h4>
+                {proddata.Discount > 0 && (
+                  <div className="discount-badge">
+                    {proddata.Discount}% OFF
+                  </div>
+                )}
               </div>
               {proddata.Stock > 0 ? (
                 <div className="add-to-cart">

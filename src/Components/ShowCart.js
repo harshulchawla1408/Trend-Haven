@@ -1,72 +1,82 @@
-import axios from "axios";
 import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { userContext } from "../App";
+import { useCart } from "./CartContext";
+import { toast } from "react-toastify";
+
 function ShowCart() {
-  const [cartdata, setcartdata] = useState([]);
-  const [billamt, setbillamt] = useState();
+  const [billamt, setBillAmt] = useState(0);
   const { udata } = useContext(userContext);
+  const { cartItems, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
-  async function fetchcart() {
-    try {
-      const resp = await axios.get(
-        `http://localhost:9000/api/getcart?un=${udata.username}`
-      );
-      if (resp.status === 200) {
-        if (resp.data.statuscode === 1) {
-          setcartdata(resp.data.cartinfo);
-          sessionStorage.setItem(
-            "cartdata",
-            JSON.stringify(resp.data.cartinfo)
-          );
-        } else {
-          setcartdata([]);
-        }
-      } else {
-        alert("Some error occured");
-      }
-    } catch (err) {
-      alert(err.message);
-    }
-  }
-  useEffect(() => {
-    if (udata !== null) {
-      fetchcart();
-    }
-  }, [udata]);
 
   useEffect(() => {
-    var gtotal = 0;
-    for (var x = 0; x < cartdata.length; x++) {
-      gtotal = gtotal + cartdata[x].TotalCost;
-    }
-    setbillamt(gtotal);
-  }, [cartdata]);
+    // Calculate total bill whenever cart items change
+    const total = cartItems.reduce((sum, item) => {
+      return sum + (item.Rate * item.quantity);
+    }, 0);
+    setBillAmt(total);
+  }, [cartItems]);
 
-  async function oncartdel(id) {
-    var userresp = window.confirm("Are you sure to delete");
-    if (userresp === true) {
-      const resp = await axios.delete(
-        `http://localhost:9000/api/delcartitem/${id}`
-      );
-      if (resp.status === 200) {
-        if (resp.data.statuscode === 1) {
-          alert("Item  removed from cart");
-
-          fetchcart();
-        } else if (resp.data.statuscode === 0) {
-          alert("Error while removing");
-        }
-      } else {
-        alert("Some error occured");
+  const handleRemoveItem = (productId, productName) => {
+    toast.info(
+      <div>
+        <p>Remove {productName || 'this item'} from cart?</p>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button 
+            onClick={() => {
+              toast.dismiss();
+              removeFromCart(productId);
+              toast.success(`${productName || 'Item'} removed from cart!`);
+            }}
+            style={{
+              background: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '5px 10px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Remove
+          </button>
+          <button 
+            onClick={() => toast.dismiss()}
+            style={{
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '5px 10px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        closeButton: false,
+        draggable: false,
+        style: { width: '300px' }
       }
-    }
-  }
+    );
+  };
 
-  function oncheckout() {
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      toast.warning("Your cart is empty! Add some items before checkout.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
     sessionStorage.setItem("tbill", billamt);
     navigate("/checkout");
-  }
+  };
   return (
     <>
       <div className="banner1">
@@ -79,9 +89,9 @@ function ShowCart() {
 
       <div className="login">
         <div className="container">
-          {cartdata.length > 0 ? (
+          {cartItems.length > 0 ? (
             <>
-              <h2>Your shopping cart</h2>
+              <h2>Your Shopping Cart ({cartItems.length} items)</h2>
               <br />
               <table className="table table-striped table-bordered">
                 <thead className="thead-dark">
@@ -91,25 +101,29 @@ function ShowCart() {
                     <th>Rate</th>
                     <th>Quantity</th>
                     <th>Total Cost</th>
-                    <th>Delete</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {cartdata.map((item, index) => (
+                  {cartItems.map((item, index) => (
                     <tr key={index}>
                       <td>
-                        <img src={`uploads/${item.picture}`} height="75" />
+                        <img 
+                          src={item.picture ? `uploads/${item.picture}` : '/placeholder.jpg'} 
+                          alt={item.pname} 
+                          height="75" 
+                        />
                       </td>
-                      <td>{item.ProdName}</td>
-                      <td>{item.Rate}</td>
-                      <td>{item.Qty}</td>
-                      <td>{item.TotalCost}</td>
+                      <td>{item.pname || 'Product Name'}</td>
+                      <td>₹{Number(item.Rate || 0).toFixed(2)}</td>
+                      <td>{item.quantity || 1}</td>
+                      <td>₹{((item.Rate || 0) * (item.quantity || 1)).toFixed(2)}</td>
                       <td>
                         <button
                           className="btn btn-danger"
-                          onClick={() => oncartdel(item._id)}
+                          onClick={() => handleRemoveItem(item._id, item.pname || 'Item')}
                         >
-                          Delete
+                          Remove
                         </button>
                       </td>
                     </tr>
@@ -118,19 +132,27 @@ function ShowCart() {
               </table>
               <br />
               <h5>
-                {cartdata.length} item(s) available in your cart
+                {cartItems.length} item(s) available in your cart
                 <br />
                 <br />
-                Rs.{billamt}/- is your total bill <br />
-                <br />
+                Rs. {billamt.toFixed(2)} is your total bill <br />
+                <div className="text-right">
+                  <h4>Grand Total: ₹{billamt.toFixed(2)}</h4>
+                  <br />
+                  <button
+                    className="btn btn-success"
+                    onClick={handleCheckout}
+                  >
+                    Proceed to Checkout
+                  </button>
+                  <button
+                    className="btn btn-danger ml-2"
+                    onClick={() => clearCart()}
+                  >
+                    Clear Cart
+                  </button>
+                </div>
               </h5>
-              <button
-                name="btn"
-                className="btn btn-primary"
-                onClick={oncheckout}
-              >
-                Checkout
-              </button>
             </>
           ) : (
             <h2>No products added yet in cart</h2>

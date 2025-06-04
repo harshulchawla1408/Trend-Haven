@@ -91,11 +91,11 @@ function Footer() {
           </div>
         </div>
       </div>
-      <div class="copy-section">
-        <div class="container">
-          <div class="copy-left">
+      <div className="copy-section">
+        <div className="container">
+          <div className="copy-left">
             <p>
-              &copy; 2025 TREND HAVEN . All rights reserved |
+              &copy; {new Date().getFullYear()} TREND HAVEN . All rights reserved |
             </p>
           </div>
           <div class="copy-right">

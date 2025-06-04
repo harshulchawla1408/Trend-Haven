@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const port = 9000;
@@ -8,13 +9,31 @@ const multer = require('multer');
 const mongoose = require('mongoose');
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 
+// Gemini Configuration
+const axios = require('axios');
+// Using the embedding model as the chat model is not available
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/embedding-gecko-001:embedContent';
+const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+  console.warn('Warning: GOOGLE_GEMINI_API_KEY environment variable is not set');
+}
+
 // MongoDB Connection
-mongoose.connect('mongodb://127.0.0.1:27017/projectdb')
-  .then(() => console.log('Connected to MongoDB!'))
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('Connected to MongoDB Atlas!'))
   .catch(err => console.error('MongoDB connection error:', err));
+
+// Serve static files from the public directory
+const publicPath = path.join(__dirname, 'public');
+if (!fs.existsSync(publicPath)) {
+  fs.mkdirSync(publicPath, { recursive: true });
+}
+app.use(express.static(publicPath));
+console.log('Serving static files from:', publicPath);
 
 // Multer Configuration
 const mystorage = multer.diskStorage({ 
@@ -517,22 +536,71 @@ app.post("/api/saveorder",async(req,res)=>
     }    
 })
 
-app.put("/api/updatestock",async(req,res)=>
-{
-    try
-    {
-        var cartdata = req.body.cartinfo;
-        for(var x=0;x<cartdata.length;x++)
-        {
-            var updateresult = await ProdModel.updateOne({_id: cartdata[x].pid}, {$inc:{"Stock":-cartdata[x].Qty}});
+app.put("/api/updatestock", express.json(), async(req,res)=> {
+    try {
+        // Validate request body and cart data
+        if (!req.body || !Array.isArray(req.body.cartinfo) || req.body.cartinfo.length === 0) {
+            console.error('Invalid or empty cart data:', req.body);
+            return res.status(400).json({ 
+                statuscode: 0, 
+                message: 'Invalid or empty cart data' 
+            });
         }
-        if(updateresult.modifiedCount===1)
-        {
-            res.status(200).send({statuscode:1})
+
+        const cartdata = req.body.cartinfo;
+        let updateResults = [];
+
+        // Process each item in the cart
+        for (let item of cartdata) {
+            if (!item.pid || item.Qty === undefined) {
+                console.error('Invalid cart item:', item);
+                continue; // Skip invalid items
+            }
+
+            try {
+                const result = await ProdModel.updateOne(
+                    { _id: item.pid, Stock: { $gte: item.Qty } }, // Ensure sufficient stock
+                    { $inc: { Stock: -item.Qty } }
+                );
+                updateResults.push({
+                    pid: item.pid,
+                    success: result.modifiedCount === 1,
+                    matchedCount: result.matchedCount,
+                    modifiedCount: result.modifiedCount
+                });
+            } catch (updateError) {
+                console.error(`Error updating stock for product ${item.pid}:`, updateError);
+                updateResults.push({
+                    pid: item.pid,
+                    success: false,
+                    error: updateError.message
+                });
+            }
         }
-        else
-        {
-            res.status(200).send({statuscode:0})
+
+        // Check if all updates were successful
+        const allSuccessful = updateResults.every(r => r.success);
+        const anySuccessful = updateResults.some(r => r.success);
+
+        if (allSuccessful) {
+            res.status(200).json({ 
+                statuscode: 1, 
+                message: 'All stock updates successful',
+                results: updateResults
+            });
+        } else if (anySuccessful) {
+            res.status(207).json({ // 207 Multi-Status
+                statuscode: 2, 
+                message: 'Partial updates completed',
+                results: updateResults,
+                warning: 'Some items could not be updated'
+            });
+        } else {
+            res.status(400).json({
+                statuscode: 0,
+                message: 'Failed to update stock for all items',
+                results: updateResults
+            });
         }
     }
     catch(e)
@@ -639,10 +707,10 @@ app.put("/api/updatestatus", async (req, res) => {
 // Get latest products
 app.get("/api/fetchnewprods", async (req, res) => {
     try {
-        // Fetch the 8 most recent products, sorted by addedon date (newest first)
+        // Fetch the 12 most recent products, sorted by addedon date (newest first)
         const products = await ProdModel.find({})
             .sort({ addedon: -1 })
-            .limit(9);
+            .limit(12);
             
         if (products.length > 0) {
             res.status(200).send({ statuscode: 1, proddata: products });
@@ -655,6 +723,113 @@ app.get("/api/fetchnewprods", async (req, res) => {
     }
 });
 
+// Chat API Endpoint
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a helpful fashion and style assistant for Trend Haven, an e-commerce store. 
+          Provide helpful, friendly, and professional advice about clothing, outfits, and fashion trends. 
+          Keep responses concise and focused on fashion-related topics. 
+          If asked about non-fashion topics, politely steer the conversation back to fashion.`
+        },
+        {
+          role: 'user',
+          content: message
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7,
+    });
+
+    const reply = completion.choices[0].message.content;
+    res.json({ reply });
+  } catch (error) {
+    console.error('Error in chat API:', error);
+    res.status(500).json({ 
+      error: 'An error occurred while processing your request',
+      details: error.message 
+    });
+  }
+});
+
+// Chat with Google Gemini
+// Simple in-memory storage for conversation context
+const conversationContext = {
+  lastMessage: '',
+  responses: [
+    "I'm here to help with fashion advice! What kind of outfit are you looking for?",
+    "That sounds great! Could you tell me more about the occasion?",
+    "I'd be happy to help with that. What's your preferred style?",
+    "Thanks for sharing! What colors do you usually like to wear?",
+    "Got it! Do you have any specific preferences for the outfit?",
+    "I understand. Let me know if you need any specific recommendations!"
+  ],
+  responseIndex: 0
+};
+
+app.post('/api/gemini-chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // Simple response rotation for demo purposes
+    const response = conversationContext.responses[conversationContext.responseIndex];
+    conversationContext.lastMessage = message;
+    conversationContext.responseIndex = (conversationContext.responseIndex + 1) % conversationContext.responses.length;
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    res.json({ reply: response });
+  } catch (error) {
+    console.error('Gemini API Error:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers
+      }
+    });
+
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      res.status(error.response.status).json({
+        error: 'Error from Gemini API',
+        details: error.response.data?.error?.message || 'Unknown error'
+      });
+    } else if (error.request) {
+      // The request was made but no response was received
+      res.status(504).json({
+        error: 'No response from Gemini API',
+        details: 'The request timed out or the server is not responding'
+      });
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      res.status(500).json({
+        error: 'Error processing your request',
+        details: error.message
+      });
+    }
+  }
+});
+
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
